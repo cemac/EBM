@@ -7,37 +7,59 @@ from filterpy.common import Saver
 
 # Parameter statistics estimated from Chris Smith's calibrated parameter ensemble
 # https://zenodo.org/records/13142999/files/calibrated_constrained_parameters.csv
-LOG_MEANS = np.array([
+LOG_MEANS_3 = np.array([
     1.77475666,  1.37614666,  2.7670545 ,  4.41765518,  0.21476718,
     0.94670492,  0.04308742,  0.17697343, -0.17338284, -0.8145181 ,
     2.04040769
 ])
-
-LOG_STDS = np.array([
+LOG_STDS_3 = np.array([
     0.78287494, 0.25966234, 0.47488502, 0.5293674 , 0.29054064,
     0.42407117, 0.32690524, 0.29560772, 0.58624183, 0.33045455,
     0.13291872
 ])
 
+def log_means(k):
+    """Return ensemble means of log-transformed parameters for k-box model."""
+    if k == 3:
+        return LOG_MEANS_3
+    else:
+        raise ValueError("Number of boxes must be 3.")
+
+def log_stds(k):
+    """Return ensemble standard deviations of log-transformed parameters for k-box model."""
+    if k == 3:
+        return LOG_STDS_3
+    else:
+        raise ValueError("Number of boxes must be 3.")
+
 def standardise(parameters):
     """Standardise parameters using means and standard deviations from Chris Smith's ensemble."""
-    return (np.log(parameters) - LOG_MEANS) / LOG_STDS
+    if len(parameters) == 11:
+        k = 3
+    else:
+        raise ValueError("Number of parameters must be 11 (3-box model).")
+    return (np.log(parameters) - log_means(k)) / log_stds(k)
 
 def unstandardise(parameters):
     """Unstandardise parameters using means and standard deviations from Chris Smith's ensemble."""
-    return np.exp(parameters * LOG_STDS + LOG_MEANS)
+    if len(parameters) == 11:
+        k = 3
+    else:
+        raise ValueError("Number of parameters must be 11 (3-box model).")
+    return np.exp(parameters * log_stds(k) + log_means(k))
 
 def unpack_parameters(parameters):
     """Unpack parameters from a 1D array."""
-    if len(parameters) != 11:
-        ValueError("Number of parameters must be 11 (3-box model).")
-    gamma = parameters[0]
-    C = parameters[1:4]
-    kappa = parameters[4:7]
-    epsilon = parameters[7]
-    sigma_eta = parameters[8]
-    sigma_xi = parameters[9]
-    F_4xCO2 = parameters[10]
+    if len(parameters) == 11:
+        gamma = parameters[0]
+        C = parameters[1:4]
+        kappa = parameters[4:7]
+        epsilon = parameters[7]
+        sigma_eta = parameters[8]
+        sigma_xi = parameters[9]
+        F_4xCO2 = parameters[10]
+    else:
+        raise ValueError("Number of parameters must be 11 (3-box model).")
     return gamma, C, kappa, epsilon, sigma_eta, sigma_xi, F_4xCO2
 
 def objective(standardised_parameters, y, regularisation_factor):
