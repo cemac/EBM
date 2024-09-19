@@ -48,8 +48,8 @@ def objective(standardised_parameters, y, regularisation_factor):
     penalty = -np.sum(norm.logpdf(standardised_parameters)) * regularisation_factor
     return model.negative_log_likelihood(y) + penalty
 
-def fit_ebm(y, regularisation_factor=1, n_attempts=10, **kwargs):
-    """Fit the energy balance model to observations using the Kalman filter."""
+def maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs):
+    """Maximise likelihood for observations using the Kalman filter."""
     for attempt in range(n_attempts):
         print(f'Attempt {attempt + 1}:')
         initial_guess = np.random.randn(11)
@@ -86,6 +86,11 @@ def fit_ebm(y, regularisation_factor=1, n_attempts=10, **kwargs):
                 print('  Optimisation failed. Maximum number of attempts reached. Returning most recent result.')
                 return result
     return result
+
+def fit_ebm(y, regularisation_factor=1, n_attempts=10, **kwargs):
+    """Fit the energy balance model to observations using the Kalman filter."""
+    result = maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs)
+    return EstimationResults(result)
 
 def build_A(gamma, C, kappa, epsilon, k):
         """Build continuous-time dynamics matrix A."""
@@ -160,6 +165,11 @@ def build_Gamma_0(Ad, Qd, k):
     Gamma_0 = np.linalg.solve(np.eye((k + 1)**2) - np.kron(Ad, Ad), Qd.flatten())
     Gamma_0 = Gamma_0.reshape((k + 1, k + 1))
     return Gamma_0
+
+def confidence_intervals(parameters, standard_errors, alpha=0.05):
+    """Compute confidence intervals for parameters using normal quantiles."""
+    z = norm.ppf(1 - alpha/2)
+    return np.array([parameters - z*standard_errors, parameters + z*standard_errors])
 
 class EnergyBalanceModel:
     """k-box stochastic energy balance model."""
@@ -281,3 +291,20 @@ class EnergyBalanceModel:
                 return parameters
         else:
             raise ValueError("Format must be 'tuple', 'dict', or 'array'.")
+
+class EstimationResults:
+    """Results of fitting the energy balance model to observations."""
+    def __init__(self, result):
+        self.result = result
+        self.parameters = result.x
+        self.covariance = result.hess_inv
+        self.standard_errors = np.sqrt(np.diag(self.covariance))
+        self.log_likelihood = -result.fun
+        self.AIC = 2*len(self.parameters) - 2*self.log_likelihood
+        self.confidence_intervals = confidence_intervals(self.parameters, self.standard_errors)
+
+    def get_model(self):
+        """Return the fitted model."""
+        parameters = unstandardise(self.parameters)
+        model = EnergyBalanceModel(*unpack_parameters(parameters))
+        return model
