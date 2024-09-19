@@ -173,7 +173,10 @@ def Build_C_d(kappa, epsilon, k):
     return C_d
 
 def build_Q_d(A, Q, k):
-    """Build discrete-time process noise covariance matrix Q_d."""
+    """Build discrete-time process noise covariance matrix Q_d.
+    
+    WARNING: Can return invalid covariance matrices for certain combinations of parameters.
+    """
     H = np.block([
         [                      -A,   Q],
         [np.zeros((k + 1, k + 1)), A.T]
@@ -189,7 +192,10 @@ def build_Gamma_0(Ad, Qd, k):
     return Gamma_0
 
 def confidence_intervals(parameters, standard_errors, alpha=0.05):
-    """Compute confidence intervals for parameters using normal quantiles."""
+    """Compute confidence intervals for parameters using normal quantiles.
+    
+    WARNING: Can violate physical constraints if applied to unstandardised parameters.
+    """
     z = norm.ppf(1 - alpha/2)
     return np.array([parameters - z*standard_errors, parameters + z*standard_errors])
 
@@ -217,6 +223,7 @@ class EnergyBalanceModel:
     ------
     ValueError
         If number of boxes is not 2 or 3.
+    ValueError
         If lengths of C and kappa are not equal.
     """
     def __init__(self, gamma, C, kappa, epsilon, sigma_eta, sigma_xi, F_4xCO2):
