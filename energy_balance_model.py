@@ -194,7 +194,31 @@ def confidence_intervals(parameters, standard_errors, alpha=0.05):
     return np.array([parameters - z*standard_errors, parameters + z*standard_errors])
 
 class EnergyBalanceModel:
-    """k-box stochastic energy balance model."""
+    """k-box stochastic energy balance model.
+
+    Attributes
+    ----------
+    gamma : float
+        Stochastic forcing continuous-time autocorrelation parameter.
+    C : array_like
+        Ocean heat capacity of each layer (top first) in W yr m-2 K-1.
+    kappa : array_like
+        Heat exchange coefficient between ocean layers (top first) in W m-2 K-1.
+    epsilon : float
+        Efficacy of deepest ocean layer.
+    sigma_eta : float
+        Standard deviation of stochastic forcing component in W m-2.
+    sigma_xi : float
+        Standard deviation of stochastic disturbance applied to surface layer in W m-2.
+    F_4xCO2 : float
+        Effective radiative forcing from a quadrupling of CO2 in W m-2.
+    
+    Raises
+    ------
+    ValueError
+        If number of boxes is not 2 or 3.
+        If lengths of C and kappa are not equal.
+    """
     def __init__(self, gamma, C, kappa, epsilon, sigma_eta, sigma_xi, F_4xCO2):
         self.gamma = gamma
         self.C = C
@@ -224,7 +248,13 @@ class EnergyBalanceModel:
         self.Gamma_0 = build_Gamma_0(self.A_d, self.Q_d, self.k)
     
     def step_response(self, n):
-        """Calculate first n years of step response to 4xCO2 forcing."""
+        """Calculate first n years of step response to 4xCO2 forcing.
+        
+        Returns
+        -------
+        x : np.ndarray
+            Array of shape (n, k + 1) containing the step response.
+        """
         d = self.B_d @ np.array([self.F_4xCO2])
         x = np.zeros((n + 1, self.k + 1))
         x[0, 0] = self.F_4xCO2
@@ -233,7 +263,13 @@ class EnergyBalanceModel:
         return x[1:]
 
     def simulate_noise(self, n):
-        """Simulate n years of process noise."""
+        """Simulate n years of process noise.
+        
+        Returns
+        -------
+        x : np.ndarray
+            Array of shape (n, k + 1) containing the noise.
+        """
         chol_Gamma_0 = np.linalg.cholesky(self.Gamma_0)
         chol_Q_d = np.linalg.cholesky(self.Q_d)
         x = np.zeros((n + 1, self.k + 1))
@@ -243,19 +279,46 @@ class EnergyBalanceModel:
         return x[1:]
     
     def noisy_step_response(self, n):
-        """Simulate n years of step response to 4xCO2 forcing with process noise."""
+        """Simulate n years of step response to 4xCO2 forcing with process noise.
+        
+        Returns
+        -------
+        x : np.ndarray
+            Array of shape (n, k + 1) containing the noisy step response.
+        """
         step_response = self.step_response(n)
         noise = self.simulate_noise(n)
         return step_response + noise
     
     def observe_noisy_step_response(self, n):
-        """Simulate observed component of n-year noisy step response to 4xCO2 forcing."""
+        """Simulate observed component of n-year noisy step response to 4xCO2 forcing.
+        
+        Returns
+        -------
+        y : np.ndarray
+            Array of shape (n, 2) containing the observed noisy step response. The
+            first column is the surface temperature and the second column is the
+            top-of-atmosphere net downward radiative flux.
+        """
         x = self.noisy_step_response(n)
         y = x @ self.C_d.T
         return y
     
     def kalman_filter(self, y):
-        """Kalman filter for observations of noisy step response."""
+        """Kalman filter for observations of noisy step response.
+        
+        Arguments
+        ---------
+        y : np.ndarray
+            Array of shape (n, 2) containing the observed noisy step response.
+            The first column is the surface temperature and the second column is
+            the top-of-atmosphere net downward radiative flux.
+        
+        Returns
+        -------
+        saver : filterpy.common.Saver
+            Saver object containing the Kalman filter state at each time step.
+        """
         n = y.shape[0]
         kf = KalmanFilter(dim_x=self.k + 1, dim_z=2, dim_u=1)
         kf.x = np.zeros(self.k + 1)
@@ -275,7 +338,15 @@ class EnergyBalanceModel:
         return saver
     
     def negative_log_likelihood(self, y):
-        """Compute negative log-likelihood using the Kalman filter."""
+        """Compute negative log-likelihood using the Kalman filter.
+        
+        Arguments
+        ---------
+        y : np.ndarray
+            Array of shape (n, 2) containing the observed noisy step response.
+            The first column is the surface temperature and the second column is
+            the top-of-atmosphere net downward radiative flux.
+        """
         saver = self.kalman_filter(y)
         log_likelihood = np.array(saver['log_likelihood'])
         return -np.sum(log_likelihood)
@@ -291,7 +362,20 @@ class EnergyBalanceModel:
         print("F_4xCO2 =", self.F_4xCO2)
     
     def get_parameters(self, format='tuple', standardised=False):
-        """Return parameters of the model in specified format."""
+        """Return parameters of the model in specified format.
+        
+        Arguments
+        ---------
+        format : str
+            Format of the output. Must be 'tuple', 'dict', or 'array'.
+        standardised : bool
+            If True, return standardised parameters (only for 'array' format).
+        
+        Raises
+        ------
+        ValueError
+            If format is not 'tuple', 'dict', or 'array'.
+        """
         if format == 'tuple':
             return self.gamma, self.C, self.kappa, self.epsilon, self.sigma_eta, self.sigma_xi, self.F_4xCO2
         elif format == 'dict':
@@ -315,7 +399,23 @@ class EnergyBalanceModel:
             raise ValueError("Format must be 'tuple', 'dict', or 'array'.")
 
 class EstimationResults:
-    """Results of fitting the energy balance model to observations."""
+    """Results of fitting the energy balance model to observations.
+    
+    Attributes
+    ----------
+    result : scipy.optimize._optimize.OptimizeResult
+        Technical details of the numerical optimisation.
+    parameters : np.ndarray
+        Array of shape (p,) containing the fitted parameters (standardised).
+    covariance : np.ndarray
+        Covariance matrix of shape (p, p) of the fitted parameters (standardised).
+    standard_errors : np.ndarray
+        Array of shape (p,) containing the standard errors of the fitted parameters (standardised).
+    log_likelihood : float
+        Log-likelihood of the fitted model.
+    AIC : float
+        Akaike Information Criterion of the fitted model.
+    """
     def __init__(self, result):
         self.result = result
         self.parameters = result.x
@@ -323,10 +423,48 @@ class EstimationResults:
         self.standard_errors = np.sqrt(np.diag(self.covariance))
         self.log_likelihood = -result.fun
         self.AIC = 2*len(self.parameters) - 2*self.log_likelihood
-        self.confidence_intervals = confidence_intervals(self.parameters, self.standard_errors)
+    
+    def get_parameters(self, standardised=False):
+        """Return the fitted parameters.
+        
+        Arguments
+        ---------
+        standardised : bool
+            If True, return standardised parameters.
+        
+        Returns
+        -------
+        parameters : np.ndarray
+            Array of shape (p,) containing the fitted parameters.
+        """
+        if standardised:
+            return self.parameters
+        else:
+            return unstandardise(self.parameters)
+    
+    def get_confidence_intervals(self, alpha=0.05, standardised=False):
+        """Return confidence intervals for the fitted parameters.
+        
+        Arguments
+        ---------
+        alpha : float
+            Significance level for confidence intervals.
+        standardised : bool
+            If True, return confidence intervals for standardised parameters.
+        
+        Returns
+        -------
+        intervals : np.ndarray
+            Array of shape (2, p) containing the confidence intervals
+        """
+        intervals = confidence_intervals(self.parameters, self.standard_errors, alpha)
+        if standardised:
+            return intervals
+        else:
+            return unstandardise(intervals)
 
     def get_model(self):
-        """Return the fitted model."""
+        """Return an instance of the fitted model."""
         parameters = unstandardise(self.parameters)
         model = EnergyBalanceModel(*unpack_parameters(parameters))
         return model
