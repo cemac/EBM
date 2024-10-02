@@ -308,7 +308,7 @@ class EnergyBalanceModel:
             top-of-atmosphere net downward radiative flux.
         """
         x = self.noisy_step_response(n)
-        y = x @ self.C_d.T
+        y = self.observe(x)
         return y
     
     def kalman_filter(self, y):
@@ -404,6 +404,25 @@ class EnergyBalanceModel:
                 return parameters
         else:
             raise ValueError("Format must be 'tuple', 'dict', or 'array'.")
+    
+    def observe(self, x):
+        """Observe surface temperature and top-of-atmosphere net downward radiative flux.
+        
+        Arguments
+        ---------
+        x : np.ndarray
+            Array of shape (n, k + 1) containing the state. The first column is the
+            forcing and the remaining columns are the temperatures of the ocean layers.
+
+        Returns
+        -------
+        y : np.ndarray
+            Array of shape (n, 2) containing the observations. The first column is the
+            surface temperature and the second column is the top-of-atmosphere net
+            downward radiative flux.
+        """
+        y = x @ self.C_d.T
+        return y
 
 class EstimationResults:
     """Results of fitting the energy balance model to observations.
