@@ -23,7 +23,7 @@ You can then import EBM2 as a Python module from within the interpreter.
 import energy_balance_model as ebm
 ```
 
-The file demo.py contains a script showing how to generate synthetic data from a three-box stochastic EBM and how to estimate the EBM's parameters via maximum likelihood. Note that to generate the figure at the end of the script you will need to have [matplotlib](https://matplotlib.org/) installed.
+The file [demo.py](demo.py) contains a script showing how to generate synthetic data from a three-box stochastic EBM and how to estimate the EBM's parameters via maximum likelihood. Note that to generate the figure at the end of the script you will need to have [matplotlib](https://matplotlib.org/) installed.
 
 ```bash
 conda install matplotlib
