@@ -32,3 +32,13 @@ conda install matplotlib
 ## Licence
 
 EBM2 is licenced under the MIT license - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+Thanks to Chris Smith for providing an ensemble of [calibrated parameter values](https://doi.org/10.5281/zenodo.13142999), which we use here for initialisation and (optionally) regularisation of the maximum likelihood estimation.
+
+## References
+
+Cummins, D. P., Stephenson, D. B., & Stott, P. A. (2020). Optimal Estimation of Stochastic Energy Balance Model Parameters, *Journal of Climate, 33*(18), 7909-7926, [https://doi.org/10.1175/JCLI-D-19-0589.1](https://doi.org/10.1175/JCLI-D-19-0589.1)
+
+Smith, C. (2024). FaIR calibration data (1.4.2) [Data set]. Zenodo. [https://doi.org/10.5281/zenodo.13142999](https://doi.org/10.5281/zenodo.13142999)
