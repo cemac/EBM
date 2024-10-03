@@ -6,16 +6,19 @@ import matplotlib.pyplot as plt
 # Create an instance of the EnergyBalanceModel class with random parameters
 parameters = ebm.unstandardise(np.random.randn(11))
 three_box_model = ebm.EnergyBalanceModel(*ebm.unpack_parameters(parameters))
-print(three_box_model.get_parameters('dict'))
+print('True model parameters:')
+three_box_model.print()
 
 # Generate synthetic data
 y = three_box_model.observe_noisy_step_response(150)
-print(y[:5]) # print first five years of the data
+print('\nSynthetic data years 1-5:')
+print(f'{y[:5]}\n') # print first five years of the data
 
 # Estimate the parameters
 estimation_results = ebm.fit_ebm(y, method='BFGS', options={'gtol': 1e-3})
 fitted_model = estimation_results.get_model()
-print(fitted_model.get_parameters('dict'))
+print('\nFitted model parameters:')
+fitted_model.print()
 
 # Compute the fitted values
 fitted_model = estimation_results.get_model()
