@@ -1,4 +1,4 @@
-name: EBM2
+name: EBM
 channels:
   - conda-forge
 dependencies:

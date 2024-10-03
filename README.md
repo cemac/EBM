@@ -1,4 +1,4 @@
-# EBM2
+# EBM
 
 This project will initially be a Python port of the R package [EBM](https://github.com/donaldcummins/EBM) for maximum likelihood estimation of k-box stochastic energy balance models. In the future, it will serve as a base upon which to add new methodologies and features as and when they are developed.
 
@@ -8,16 +8,16 @@ Cummins, D. P., Stephenson, D. B., & Stott, P. A. (2020). Optimal Estimation of 
 
 ## Quickstart
 
-The easiest way to try out EBM2 is to clone this repository and build a fresh conda environment from the [YAML file](EBM2.yml).
+The easiest way to try out EBM is to clone this repository and build a fresh conda environment from the [YAML file](EBM.yml).
 
 ```bash
-git clone git@github.com:donaldcummins/EBM2.git
-cd EBM2
-conda env create -f EBM2.yml
-conda activate EBM2
+git clone git@github.com:cemac/EBM.git
+cd EBM
+conda env create -f EBM.yml
+conda activate EBM
 ```
 
-You can then import EBM2 as a Python module from within the interpreter.
+You can then import EBM as a Python module from within the interpreter.
 
 ```python
 import energy_balance_model as ebm
@@ -31,7 +31,7 @@ conda install matplotlib
 
 ## Licence
 
-EBM2 is licenced under the MIT license - see the [LICENSE](LICENSE) file for details.
+EBM is licenced under the MIT license - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgements
 
