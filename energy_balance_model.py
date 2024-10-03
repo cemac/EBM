@@ -110,7 +110,30 @@ def maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs):
     return result
 
 def fit_ebm(y, regularisation_factor=1, n_attempts=10, **kwargs):
-    """Fit the energy balance model to observations using the Kalman filter."""
+    """Fit the energy balance model to observations using the Kalman filter.
+    
+    Arguments
+    ---------
+    y : np.ndarray
+        Array of shape (n, 2) containing the observed noisy step response.
+        The first column is the surface temperature and the second column is
+        the top-of-atmosphere net downward radiative flux.
+    regularisation_factor : float
+        Positive number determining the amount of regularisation. Zero means no
+        regularisation, i.e. maximum likelihood estimation. Values greater than
+        zero correspond to maximum a posteriori estimation with a Gaussian prior
+        on the standardised parameters.
+    n_attempts : int
+        Number of attempts to make if optimisation fails.
+    **kwargs : dict
+        Additional keyword arguments to pass to scipy.optimize.minimize. Good
+        results can be obtained by setting method='BFGS' and options={'gtol': 1e-3}.
+    
+    Returns
+    -------
+    results : EstimationResults
+        Results of fitting the energy balance model to observations.
+    """
     result = maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs)
     return EstimationResults(result)
 
