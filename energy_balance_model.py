@@ -5,52 +5,64 @@ from scipy.stats import norm
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Saver
 
-# Parameter statistics estimated from Chris Smith's calibrated parameter ensemble
-# https://zenodo.org/records/13142999/files/calibrated_constrained_parameters.csv
-LOG_MEANS_3 = np.array([
-    1.77475666,  1.37614666,  2.7670545 ,  4.41765518,  0.21476718,
-    0.94670492,  0.04308742,  0.17697343, -0.17338284, -0.8145181 ,
-    2.04040769
-])
-LOG_STDS_3 = np.array([
-    0.78287494, 0.25966234, 0.47488502, 0.5293674 , 0.29054064,
-    0.42407117, 0.32690524, 0.29560772, 0.58624183, 0.33045455,
-    0.13291872
-])
+# Parameter statistics estimated from Chris Smith's calibrated parameter ensembles
+# https://doi.org/10.5281/zenodo.13951079
+# https://doi.org/10.5281/zenodo.10566646
+ensemble_statistics = np.load("parameter_distributions.npz")
+LOG_MEANS_2 = ensemble_statistics['log_means_2']
+LOG_MEANS_3 = ensemble_statistics['log_means_3']
+LOG_STDS_2 = ensemble_statistics['log_stds_2']
+LOG_STDS_3 = ensemble_statistics['log_stds_3']
 
 def log_means(k):
     """Return ensemble means of log-transformed parameters for k-box model."""
+    if k == 2:
+        return LOG_MEANS_2
     if k == 3:
         return LOG_MEANS_3
     else:
-        raise ValueError("Number of boxes must be 3.")
+        raise ValueError("Number of boxes must be 2 or 3.")
 
 def log_stds(k):
     """Return ensemble standard deviations of log-transformed parameters for k-box model."""
+    if k == 2:
+        return LOG_STDS_2
     if k == 3:
         return LOG_STDS_3
     else:
-        raise ValueError("Number of boxes must be 3.")
+        raise ValueError("Number of boxes must be 2 or 3.")
 
 def standardise(parameters):
     """Standardise parameters using means and standard deviations from Chris Smith's ensemble."""
-    if len(parameters) == 11:
+    if len(parameters) == 9:
+        k = 2
+    elif len(parameters) == 11:
         k = 3
     else:
-        raise ValueError("Number of parameters must be 11 (3-box model).")
+        raise ValueError("Number of parameters must be 9 (2-box model) or 11 (3-box model).")
     return (np.log(parameters) - log_means(k)) / log_stds(k)
 
 def unstandardise(parameters):
     """Unstandardise parameters using means and standard deviations from Chris Smith's ensemble."""
-    if len(parameters) == 11:
+    if len(parameters) == 9:
+        k = 2
+    elif len(parameters) == 11:
         k = 3
     else:
-        raise ValueError("Number of parameters must be 11 (3-box model).")
+        raise ValueError("Number of parameters must be 9 (2-box model) or 11 (3-box model).")
     return np.exp(parameters * log_stds(k) + log_means(k))
 
 def unpack_parameters(parameters):
     """Unpack parameters from a 1D array."""
-    if len(parameters) == 11:
+    if len(parameters) == 9:
+        gamma = parameters[0]
+        C = parameters[1:3]
+        kappa = parameters[3:5]
+        epsilon = parameters[5]
+        sigma_eta = parameters[6]
+        sigma_xi = parameters[7]
+        F_4xCO2 = parameters[8]
+    elif len(parameters) == 11:
         gamma = parameters[0]
         C = parameters[1:4]
         kappa = parameters[4:7]
@@ -59,7 +71,7 @@ def unpack_parameters(parameters):
         sigma_xi = parameters[9]
         F_4xCO2 = parameters[10]
     else:
-        raise ValueError("Number of parameters must be 11 (3-box model).")
+        raise ValueError("Number of parameters must be 9 (2-box model) or 11 (3-box model).")
     return gamma, C, kappa, epsilon, sigma_eta, sigma_xi, F_4xCO2
 
 def objective(standardised_parameters, y, regularisation_factor):
@@ -70,11 +82,17 @@ def objective(standardised_parameters, y, regularisation_factor):
     penalty = -np.sum(norm.logpdf(standardised_parameters)) * regularisation_factor
     return model.negative_log_likelihood(y) + penalty
 
-def maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs):
+def maximise_likelihood(y, k, regularisation_factor, n_attempts, **kwargs):
     """Maximise likelihood for observations using the Kalman filter."""
+    if k == 2:
+        n_parameters = 9
+    elif k == 3:
+        n_parameters = 11
+    else:
+        raise ValueError("Number of boxes must be 2 or 3.")
     for attempt in range(n_attempts):
         print(f'Attempt {attempt + 1}:')
-        initial_guess = np.random.randn(11)
+        initial_guess = np.random.randn(n_parameters)
         try:
             best_value = objective(initial_guess, y, regularisation_factor)
         except ValueError:
@@ -82,7 +100,7 @@ def maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs):
             continue
         print(f'  Initial guess value: {best_value}')
         for i in range(200):
-            standardised_parameters = np.random.randn(11)
+            standardised_parameters = np.random.randn(n_parameters)
             try:
                 objective_value = objective(standardised_parameters, y, regularisation_factor)
             except ValueError:
@@ -109,7 +127,7 @@ def maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs):
                 return result
     return result
 
-def fit_ebm(y, regularisation_factor=1, n_attempts=10, **kwargs):
+def fit_ebm(y, k=3, regularisation_factor=1, n_attempts=10, **kwargs):
     """Fit the energy balance model to observations using the Kalman filter.
     
     Arguments
@@ -118,6 +136,8 @@ def fit_ebm(y, regularisation_factor=1, n_attempts=10, **kwargs):
         Array of shape (n, 2) containing the observed noisy step response.
         The first column is the surface temperature and the second column is
         the top-of-atmosphere net downward radiative flux.
+    k : int
+        Number of layers in the ocean. Must be 2 or 3.
     regularisation_factor : float
         Positive number determining the amount of regularisation. Zero means no
         regularisation, i.e. maximum likelihood estimation. Values greater than
@@ -134,7 +154,7 @@ def fit_ebm(y, regularisation_factor=1, n_attempts=10, **kwargs):
     results : EstimationResults
         Results of fitting the energy balance model to observations.
     """
-    result = maximise_likelihood(y, regularisation_factor, n_attempts, **kwargs)
+    result = maximise_likelihood(y, k, regularisation_factor, n_attempts, **kwargs)
     return EstimationResults(result)
 
 def build_A(gamma, C, kappa, epsilon, k):
@@ -210,7 +230,7 @@ def build_Q_d(A, Q, k):
 
 def build_Gamma_0(Ad, Qd, k):
     """Build discrete-time marginal covariance matrix Gamma_0."""
-    Gamma_0 = np.linalg.solve(np.eye((k + 1)**2) - np.kron(Ad, Ad), Qd.flatten())
+    Gamma_0 = np.linalg.solve(np.eye((k + 1)**2) - np.kron(Ad, Ad), Qd.flatten()) # can only use flatten because Qd symmetric
     Gamma_0 = Gamma_0.reshape((k + 1, k + 1))
     return Gamma_0
 
