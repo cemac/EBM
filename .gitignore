@@ -3,3 +3,4 @@ test.py
 test_fair.py
 fair_ensemble.py
 *.pdf
+parameter_distributions.npz
