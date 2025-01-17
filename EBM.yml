@@ -2,7 +2,9 @@ name: EBM
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  - python
   - numpy
   - scipy
   - filterpy
+  - matplotlib
+  - pandas
