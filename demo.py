@@ -45,6 +45,7 @@ def plot(y, fitted_values):
 
     fig.tight_layout()
     fig.savefig('fitted_values.pdf')
+    plt.close(fig)
 
 # Plot the observed vs fitted values
 plot(y, fitted_values)
