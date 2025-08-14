@@ -15,7 +15,7 @@ print('\nSynthetic data years 1-5:')
 print(f'{y[:5]}\n') # print first five years of the data
 
 # Estimate the parameters
-estimation_results = ebm.fit_ebm(y, method='BFGS', options={'gtol': 1e-3})
+estimation_results = ebm.fit_ebm(y, regularisation_factor=1, method='BFGS', options={'gtol': 1e-3})
 fitted_model = estimation_results.get_model()
 print('\nFitted model parameters:')
 fitted_model.print()

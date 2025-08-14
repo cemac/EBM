@@ -127,7 +127,7 @@ def maximise_likelihood(y, k, regularisation_factor, n_attempts, **kwargs):
                 return result
     return result
 
-def fit_ebm(y, k=3, regularisation_factor=1, n_attempts=10, **kwargs):
+def fit_ebm(y, k=3, regularisation_factor=0, n_attempts=10, **kwargs):
     """Fit the energy balance model to observations using the Kalman filter.
     
     Arguments
