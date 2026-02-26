@@ -1,6 +1,7 @@
-import energy_balance_model as ebm
 import numpy as np
 import matplotlib.pyplot as plt
+
+import energy_balance_model as ebm
 
 # Create an instance of the EnergyBalanceModel class with random parameters
 parameters = ebm.unstandardise(np.random.randn(11))
