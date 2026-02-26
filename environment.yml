@@ -1,6 +1,7 @@
 name: EBM
 channels:
   - conda-forge
+  - nodefaults
 dependencies:
   - python
   - numpy
