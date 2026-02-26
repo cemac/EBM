@@ -8,12 +8,12 @@ Cummins, D. P., Stephenson, D. B., & Stott, P. A. (2020). Optimal Estimation of 
 
 ## Quickstart
 
-The easiest way to try out EBM is to clone this repository and build a fresh conda environment from the [YAML file](EBM.yml).
+The easiest way to try out EBM is to clone this repository and build a fresh conda environment from the [YAML file](environment.yml).
 
 ```bash
 git clone git@github.com:cemac/EBM.git
 cd EBM
-conda env create -f EBM.yml
+conda env create -f environment.yml
 conda activate EBM
 ```
 
