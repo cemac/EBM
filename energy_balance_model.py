@@ -1,3 +1,53 @@
+"""
+Energy Balance Model (EBM) parameter estimation and simulation.
+
+This module implements a k-box stochastic energy balance model for simulating
+Earth's climate response to radiative forcing, with parameter estimation via
+Kalman filtering and maximum likelihood/MAP methods.
+
+Main Components
+---------------
+EnergyBalanceModel : class
+    Core model class for simulating climate dynamics with 2 or 3 ocean layers.
+    Supports deterministic step response and stochastic simulations.
+
+EstimationResults : class
+    Container for parameter estimation results including fitted parameters,
+    covariance matrices, confidence intervals, and model diagnostics (AIC).
+
+fit_ebm : function
+    High-level interface for fitting model parameters to observed data using
+    Kalman filtering with optional regularisation.
+
+Parameter Utilities
+-------------------
+standardise / unstandardise : functions
+    Transform parameters to/from standardised space using ensemble statistics
+    from Chris Smith's calibrated parameter ensembles (Zenodo).
+
+unpack_parameters : function
+    Convert parameter array to individual model components (gamma, C, kappa, etc.).
+
+Model Formulation
+-----------------
+The model represents climate as a system of coupled boxes:
+- Forcing layer (deterministic + stochastic Ornstein-Uhlenbeck process)
+- k ocean layers with heat capacities C and exchange coefficients kappa
+- Process noise on forcing (sigma_eta) and surface layer (sigma_xi)
+
+State evolves according to continuous-time SDE, discretised to annual timesteps.
+Observations consist of surface temperature and top-of-atmosphere radiative flux.
+
+References
+----------
+Methodology:
+- Cummins et al. (2020): https://doi.org/10.1175/JCLI-D-19-0589.1
+
+Parameter ensembles from Chris Smith:
+- Two-box: https://doi.org/10.5281/zenodo.13951079
+- Three-box: https://doi.org/10.5281/zenodo.10566646
+"""
+
 import numpy as np
 from scipy.linalg import expm
 from scipy.optimize import minimize
