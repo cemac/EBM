@@ -1,10 +1,23 @@
+"""
+Download and process calibrated EBM parameter ensembles.
+
+This script downloads parameter ensembles from Chris Smith's calibrated
+two-box and three-box energy balance models, computes log-space statistics
+(means and standard deviations), and saves them in NumPy binary format.
+
+The output file 'parameter_distributions.npz' contains:
+- log_means_2, log_stds_2: Statistics for the two-box model (9 parameters)
+- log_means_3, log_stds_3: Statistics for the three-box model (11 parameters)
+
+Data sources:
+- Two-box: https://doi.org/10.5281/zenodo.13951079
+- Three-box: https://doi.org/10.5281/zenodo.10566646
+"""
+
 import numpy as np
 import pandas as pd
 
-# https://doi.org/10.5281/zenodo.13951079
 URL2 = "https://zenodo.org/records/13951079/files/calibrated_constrained_parameters.csv?download=1"
-
-# https://doi.org/10.5281/zenodo.10566646
 URL3 = "https://zenodo.org/records/10566646/files/calibrated_constrained_parameters.csv?download=1"
 
 # Chris Smith's two-box parameter ensemble
